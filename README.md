@@ -26,3 +26,4 @@ uv sync
 ```
 uv run pre-commit install
 ```
+Note that this environment is for TPU. Adjust accordingly for your device.
