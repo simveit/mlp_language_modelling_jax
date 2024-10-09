@@ -60,7 +60,7 @@ def get_dataset(encoded_words: List[List[int]], block_size: int) -> Tuple[Array,
 
 def get_train_val_test(
     encoded_words: List[List[int]], block_size: int
-) -> Tuple[jax.Array, jax.Array, jax.Array, jax.Array, jax.Array, jax.Array]:
+) -> Tuple[Array, Array, Array, Array, Array, Array]:
     """
     Split the dataset into training, validation and test sets.
     """
