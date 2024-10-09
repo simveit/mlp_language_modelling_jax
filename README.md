@@ -1,4 +1,4 @@
-# research-template
+# MLP language modelling in JAX
 
 ## Build Environment
 
