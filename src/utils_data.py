@@ -55,6 +55,7 @@ def get_train_val_test(
     """
     Split the dataset into training, validation and test sets.
     """
+    random.seed(42)
     random.shuffle(encoded_words)
     train_words = encoded_words[: int(0.8 * len(encoded_words))]
     val_words = encoded_words[int(0.8 * len(encoded_words)) : int(0.9 * len(encoded_words))]
@@ -84,6 +85,6 @@ if __name__ == "__main__":
     print(f"X_test shape: {X_test.shape}")
     print(f"y_test shape: {y_test.shape}")
     print("Print some examples from the training set:")
-    for i in range(16):
+    for i in range(15):
         print(f"encoded: {X_tr[i]} -> {y_tr[i]}")
         print(f"decoded: {decode(X_tr[i].tolist(), vocab)} -> {decode([y_tr[i].item()], vocab)}")
