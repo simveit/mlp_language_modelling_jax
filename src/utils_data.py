@@ -7,7 +7,7 @@ import jax.numpy as jnp
 Array = jax.Array
 
 
-def load_data(path: str, debug: bool = False) -> Tuple[List[str], List[str]]:
+def load_data(path: str) -> Tuple[List[str], List[str]]:
     with open(path, "r") as f:
         data = f.read()
 
@@ -17,15 +17,6 @@ def load_data(path: str, debug: bool = False) -> Tuple[List[str], List[str]]:
 
     vocab = sorted(list(set("".join(words))))
     vocab = ["<eos>"] + vocab
-    if debug:
-        print(f"number of examples in dataset: {len(words)}")
-        print(f"max word length: {max([len(word) for word in words])}")
-        print(f"min word length: {min([len(word) for word in words])}")
-        print(f"unique characters in dataset: {len(vocab)}")
-        print("vocabulary:")
-        print(" ".join(vocab))
-        print("example for a word:")
-    print(words[0])
     return words, vocab
 
 
@@ -75,9 +66,24 @@ def get_train_val_test(
 
 
 if __name__ == "__main__":
-    words, vocab = load_data("/home/simon/mlp_language_modelling_jax/data/names.txt", debug=True)
+    words, vocab = load_data("/home/simon/mlp_language_modelling_jax/data/names.txt")
+    print(f"number of examples in dataset: {len(words)}")
+    print(f"max word length: {max([len(word) for word in words])}")
+    print(f"min word length: {min([len(word) for word in words])}")
+    print(f"unique characters in dataset: {len(vocab)}")
+    print("vocabulary:")
+    print(" ".join(vocab))
+    print("example for a word:")
+    print(words[0])
     encoded_words = [encode(word, vocab) for word in words]
     X_tr, y_tr, X_val, y_val, X_test, y_test = get_train_val_test(encoded_words, block_size=3)
+    print(f"X_tr shape: {X_tr.shape}")
+    print(f"y_tr shape: {y_tr.shape}")
+    print(f"X_val shape: {X_val.shape}")
+    print(f"y_val shape: {y_val.shape}")
+    print(f"X_test shape: {X_test.shape}")
+    print(f"y_test shape: {y_test.shape}")
     print("Print some examples from the training set:")
     for i in range(16):
-        print(f"{decode(X_tr[i].tolist(), vocab)} -> {decode([y_tr[i].item()], vocab)}")
+        print(f"encoded: {X_tr[i]} -> {y_tr[i]}")
+        print(f"decoded: {decode(X_tr[i].tolist(), vocab)} -> {decode([y_tr[i].item()], vocab)}")
