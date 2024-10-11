@@ -1,10 +1,11 @@
-from typing import NamedTuple
+from typing import Any, List, NamedTuple, Tuple
 
 import jax
 import jax.numpy as jnp
+import matplotlib.pyplot as plt
 from jax import random
 
-import utils_data
+import src.utils_data as utils_data
 
 Array = jax.Array
 
@@ -44,7 +45,9 @@ def loss_fn(params: MLPParams, X: Array, y: Array) -> Array:
 
 
 @jax.jit
-def train_step(params: MLPParams, X: Array, y: Array, learning_rate: float) -> MLPParams:
+def train_step(
+    params: MLPParams, X: Array, y: Array, learning_rate: float
+) -> Tuple[MLPParams, Array]:
     loss = loss_fn(params, X, y)
     grads = jax.grad(loss_fn)(params, X, y)
     params = jax.tree.map(lambda p, g: p - learning_rate * g, params, grads)
@@ -66,16 +69,48 @@ def train(
     num_epochs: int,
     learning_rate: float,
     batch_size: int,
-) -> MLPParams:
+) -> Tuple[MLPParams, Array, List[int], List[Any], List[Any]]:
+    epochs = []
+    losses = []
+    val_losses = []
     for epoch in range(num_epochs):
         ix = random.randint(random.PRNGKey(epoch), (batch_size,), 0, len(X_tr))
         X_batch = jnp.take(X_tr, ix, axis=0)
         y_batch = jnp.take(y_tr, ix, axis=0)
         params, loss = train_step(params, X_batch, y_batch, learning_rate)
-        if epoch % 1000 == 0:
+        if epoch % 1000 == 0 and epoch > 0:
             val_loss = evaluate(params, X_val, y_val)
             print(f"epoch {epoch}, loss {loss}, val_loss {val_loss}")
-    return params, loss
+            epochs.append(epoch)
+            losses.append(loss.item())
+            val_losses.append(val_loss.item())
+    return params, loss, epochs, losses, val_losses
+
+
+def sample(params: MLPParams, key: Array, vocab: List[str]) -> str:
+    """
+    1) Start with <eos>
+    2) Index into the weights matrix W for the current character
+    3) Sample the next character from the distribution
+    4) Append the sampled character to the sampled word
+    5) Repeat steps 3-5 until <eos> is sampled
+    6) Return the sampled word
+    """
+    current_chars = jnp.array([vocab.index("<eos>"), vocab.index("<eos>"), vocab.index("<eos>")])[
+        None, :
+    ]
+    sampled_word = ["<eos>", "<eos>", "<eos>"]
+    while True:
+        key, subkey = jax.random.split(key)
+        logits = forward(params, current_chars)
+        sampled_char = random.categorical(subkey, logits=logits)[0]
+        current_chars = jnp.concatenate(
+            [current_chars[:, 1:], jnp.array([sampled_char])[None, :]], axis=1
+        )
+        sampled_word.append(vocab[sampled_char])
+        if sampled_char == vocab.index("<eos>"):
+            break
+    return "".join(sampled_word)[len("<eos><eos><eos>") : -len("<eos>")]
 
 
 if __name__ == "__main__":
@@ -92,7 +127,7 @@ if __name__ == "__main__":
     X_tr, y_tr, X_val, y_val, X_test, y_test = utils_data.get_train_val_test(
         encoded_words, block_size=block_size
     )
-    params, loss = train(
+    params, loss, epochs, losses, val_losses = train(
         params,
         X_tr,
         y_tr,
@@ -102,3 +137,10 @@ if __name__ == "__main__":
         learning_rate=learning_rate,
         batch_size=batch_size,
     )
+    plt.figure()
+    plt.plot(epochs, losses, label="Training loss")
+    plt.plot(epochs, val_losses, label="Validation loss")
+    plt.legend()
+    plt.savefig("losses.png")
+    for i in range(10):
+        print(sample(params, random.PRNGKey(i), vocab))
